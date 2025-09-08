@@ -15,6 +15,9 @@ import ProjectDashboard from "./pages/ProjectDashboard";
 import Register from "./pages/Register";
 import SpaceDashboard from "./pages/SpaceDashboard";
 import Tasks from "./pages/Tasks";
+import EditSpace from "./Components/EditSpace";
+import EditProject from "./Components/EditProject";
+import ViewTaskDetails from "./pages/ViewTaskDetails";
 
 function App() {
   const appRouter = createBrowserRouter([
@@ -62,6 +65,18 @@ function App() {
           path: "addProject/:spaceId",
           element: <AddProject />,
         },
+        {
+          path: 'editSpace/:spaceId',
+          element:<EditSpace/>
+        },
+        {
+          path: 'editProject/:spaceId/:projectId',
+          element:<EditProject/>
+        },
+         {
+          path: 'task-details/:taskId',
+          element:<ViewTaskDetails/>
+        }
       ],
     },
   ]);

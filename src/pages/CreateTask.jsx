@@ -26,23 +26,28 @@ const CreateTask = () => {
   const projectId = location.state?.projectId;
 
   useEffect(() => {
-    const fetchAvailableUsers = async () => {
+ 
+
+    const fetchAvailableUsersToAssignTask = async () => {
       try {
+        console.log(projectId)
         const res = await fetch(
-          `http://localhost:8000/api/project/space-users/${spaceId}`,
+          `http://localhost:8000/api/project/getProjectMembers/${projectId}/members`,
           {
             credentials: "include",
           }
         );
         const result = await res.json();
         setAvailableUsers(result?.data || []);
+        // setShowUserList(true)
+        console.log(availableUsers)
       } catch (err) {
         console.error("Error fetching users", err);
       }
     };
 
-    fetchAvailableUsers();
-  }, [spaceId]);
+    fetchAvailableUsersToAssignTask();
+  }, [projectId]);
 
   useEffect(() => {
     const fetchPipelines = async () => {
@@ -68,7 +73,7 @@ const CreateTask = () => {
   const handleAddMember = (userId) => {
     setForm((prev) => ({
       ...prev,
-      assignedTo: [...new Set([...(prev.assignedTo || []), userId])],
+      assignedTo: userId,
     }));
   };
 
@@ -90,6 +95,7 @@ const CreateTask = () => {
     }
   
     try {
+      console.log("assignto",form.assignedTo)
       const res = await fetch(
         `http://localhost:8000/api/task/${projectId}/createTask`,
         {
@@ -104,6 +110,7 @@ const CreateTask = () => {
             endDate: form.endDate || null,
             assignedTo: form.assignedTo || null,
             attachments: form.attachments || [],
+              status:form.status,
           }),
         }
       );
@@ -113,6 +120,7 @@ const CreateTask = () => {
   
       if (result.success) {
         alert("Task created successfully ✅");
+        navigate(-1)
       } else {
         alert(result.message || "Failed to create task ❌");
       }
@@ -221,7 +229,7 @@ const CreateTask = () => {
               >
                 <option>To Do</option>
                 <option>In Progress</option>
-                <option>Completed</option>
+                <option>Done</option>
               </select>
             </div>
             <div>

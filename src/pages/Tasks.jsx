@@ -1,28 +1,33 @@
+import { Eye } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { GoPlus } from "react-icons/go";
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
-import { Link, useLocation, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 function Tasks() {
+  const navigate= useNavigate();
   const { spaceId } = useParams();
   const location = useLocation();
   const project = location.state?.project;
   const projectId = project?._id;
-
   const [pipelines, setPipelines] = useState([]);
   const [expandedPipeline, setExpandedPipeline] = useState(null); // which pipeline is open
+
 
   // Fetch pipelines with tasks
   useEffect(() => {
     const fetchPipelines = async () => {
       try {
+        console.log("pid",projectId)
         const res = await fetch(
           `http://localhost:8000/api/project/${projectId}/pipelines-with-tasks`,
           { credentials: "include" }
         );
         const result = await res.json();
+        console.log(result)
         if (result.success) {
-          setPipelines(result.data);
+          setPipelines(result?.data);
+          
         }
       } catch (err) {
         console.error("Error fetching pipelines:", err);
@@ -31,10 +36,24 @@ function Tasks() {
     if (projectId) fetchPipelines();
   }, [projectId]);
 
+ console.log(pipelines)
+
   const toggleExpand = (pipelineId) => {
     setExpandedPipeline((prev) => (prev === pipelineId ? null : pipelineId));
   };
 
+  const handleViewPage= (taskId,taskName,startDate,endDate,assignedTo)=> {
+console.log("taskid",taskId)
+navigate(`../task-details/${taskId}`, {
+    state: {
+      taskId,
+      taskName,
+      startDate,
+      endDate,
+      assignedTo,
+    },
+  });
+  }
   return (
     <div className="p-5 w-full h-full">
       <div className="w-full flex justify-between items-center">
@@ -55,7 +74,7 @@ function Tasks() {
           </div>
         </div>
         <div className="flex items-center gap-6">
-          <Link
+     {  pipelines.length >0 &&  (  <Link
             to={"/home/createTask"}
             state={{ projectId }}
             className="flex text-gray-600 py-1 px-.5 items-center gap-1 w-28 bg-white border-2 border-gray-200"
@@ -64,7 +83,7 @@ function Tasks() {
               <GoPlus size={20} />
             </div>
             <p className="text-sm">Create Task</p>
-          </Link>
+          </Link>)}
           <Link
             to={`/home/addPipeline/${spaceId}`}
             className="flex text-gray-600 py-1 px-.5 items-center gap-1 w-28 bg-white border-2 border-gray-200"
@@ -83,15 +102,20 @@ function Tasks() {
           <thead>
             <tr className="bg-white">
               <th className="text-left text-gray-500 px-4 py-2">Pipeline</th>
+               <th className="text-left text-gray-500 px-4 py-2">Start date</th>
               <th className="text-left text-gray-500 px-4 py-2">Due date</th>
               <th className="text-left text-gray-500 px-4 py-2">Status</th>
               <th className="text-left text-gray-500 px-4 py-2">Assigned to</th>
+               <th className="text-left text-gray-500 px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
+          
             {pipelines.map((pipeline) => (
+              
               <React.Fragment key={pipeline._id}>
                 {/* Pipeline row */}
+                                
                 <tr
                   className="bg-gray-100 cursor-pointer"
                   onClick={() => toggleExpand(pipeline._id)}
@@ -105,14 +129,30 @@ function Tasks() {
                     {pipeline.name}
                   </td>
                   <td className="px-4 py-2">
+                    {pipeline.createdAt
+                      ? new Date(pipeline.createdAt).toLocaleDateString()
+                      : "—"}
+                  </td>
+                  <td className="px-4 py-2">
                     {pipeline.endDate
                       ? new Date(pipeline.endDate).toLocaleDateString()
                       : "—"}
                   </td>
-                  <td className="px-4 py-2">—</td>
-                  <td className="px-4 py-2">{pipeline.assignedTo
+                  <td className="px-4 py-2">
+   
+                    
+{pipeline.tasks.length >0 && (pipeline.tasks.every(t => t.status === "Done") ? "Done" : "In Progress")}
+
+                  </td>
+               
+                  {/* <td className="px-4 py-2">{pipeline.assignedTo
                           ? pipeline.assignedTo.name || "Unassigned"
-                          : "Unassigned"}</td>
+                          : "Unassigned"}</td> */}
+                               {/* <td className="px-4 py-2">
+   
+                    
+<Eye size={14} />
+                  </td> */}
                 </tr>
 
                 {/* Tasks under pipeline */}
@@ -121,6 +161,11 @@ function Tasks() {
                     <tr key={task._id} className="border-t">
                       <td className="px-10 py-2 text-gray-700">
                         {task.taskName}
+                      </td>
+                       <td className="px-4 py-2">
+                        {task.startDate
+                          ? new Date(task.startDate).toLocaleDateString()
+                          : "—"}
                       </td>
                       <td className="px-4 py-2">
                         {task.endDate
@@ -133,6 +178,21 @@ function Tasks() {
                           ? task.assignedTo.name || "Unassigned"
                           : "Unassigned"}
                       </td>
+                           <td className="px-4 py-2">                  
+<Eye
+  size={14}
+  className="cursor-pointer"
+  onClick={() =>
+    handleViewPage(
+      task._id,
+      task.taskName,
+      task.startDate,
+      task.endDate,
+      task.assignedTo?.name || "Unassigned"
+    )
+  }
+/>
+                  </td>
                     </tr>
                   ))}
               </React.Fragment>

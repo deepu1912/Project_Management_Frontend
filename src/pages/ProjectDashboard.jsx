@@ -3,11 +3,17 @@ import { MdKeyboardArrowDown } from "react-icons/md";
 import { GoPlus } from "react-icons/go";
 import DummyData from "../utils/DummyData";
 import { useNavigate, useParams } from "react-router-dom";
+import { Pencil, Trash2 } from "lucide-react";
+import DeleteModal from "../Components/ProjectDeleteModal";
+
 
 const ProjectDashboard = () => {
   const [expandedProjects, setExpandedProjects] = useState([]);
   const { spaceId } = useParams();
   console.log("space", spaceId);
+      const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState(null);
+  const [selectedProjectName, setSelectedProjectName] = useState("");
   const navigate = useNavigate();
   const toggleExpand = (projectId) => {
     setExpandedProjects(
@@ -22,6 +28,7 @@ const ProjectDashboard = () => {
     navigate(`../addProject/${spaceId}`);
   };
   const [projectList, setProjectList] = useState([]);
+  
   useEffect(() => {
     const fetchProjectsUnderSpace = async () => {
       try {
@@ -42,6 +49,52 @@ const ProjectDashboard = () => {
 
     fetchProjectsUnderSpace();
   }, []);
+
+  const handleEdit = (projectId) => {
+  navigate(`/home/editProject/${spaceId}/${projectId}`)
+}
+const handleDelete = async (projectId,projectName) => {
+  setSelectedProjectId(projectId);
+    setSelectedProjectName(projectName);
+  setShowDeleteModal(true);
+}
+
+const confirmDelete = async () => {
+    try {
+    const res = await fetch(`http://localhost:8000/api/project/project-delete/${selectedProjectId}`, {
+      method: "DELETE",
+      credentials: "include", // to send cookies/session if needed
+    });
+
+    const result = await res.json();
+
+    if (res.ok) {
+      alert("Space deleted successfully.");
+    
+       const projectRes = await fetch(
+    `http://localhost:8000/api/project/getProjectsUnderSpace/${spaceId}`,
+    {
+      credentials: "include",
+    }
+  );
+
+  const result = await projectRes.json();
+  console.log("res", result);
+  setProjectList(result?.data || []);
+       
+    } else {
+      alert(result.message || "Failed to delete project.");
+    }
+  } catch (err) {
+    console.error("Delete failed", err);
+    alert("An error occurred while deleting the project.");
+  } finally {
+    setShowDeleteModal(false);
+    setSelectedProjectId(null);
+        setSelectedProjectName("");
+  }
+};
+  console.log("projlist",projectList)
   return (
     <div className="p-5 w-full h-full">
       <div className="w-full flex justify-between items-center">
@@ -82,14 +135,15 @@ const ProjectDashboard = () => {
               {/* <th className="text-left text-gray-500 px-4 py-2">Task</th> */}
               <th className="text-left text-gray-500 px-4 py-2">Status</th>
               <th className="text-left text-gray-500 px-4 py-2">Members</th>
+              <th className="text-left text-gray-500 px-4 py-2">Actions</th>
             </tr>
           </thead>
 
           <tbody>
             {projectList.map((project) => (
-              <React.Fragment key={project.id}>
+            <>
                 {/* 🟦 Project Row with Gray Background */}
-                <tr
+                <tr key={project._id}
                   className="cursor-pointer bg-gray-100 hover:bg-gray-200"
                   onClick={() => navigate(`/home/tasks/${spaceId}`, { state: { project } })}
                   //onClick={()=>navigate(`/home/projectDashboard/${space._id}`)}
@@ -104,13 +158,37 @@ const ProjectDashboard = () => {
                   <td className="px-4 py-3 space-x-2">
                     {project.members.map((member) => (
                       <span
-                        key={member}
                         className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full"
                       >
                         {member.name}
                       </span>
                     ))}
                   </td>
+
+                   <td className="px-4 py-3">
+  <div className="flex gap-4">
+    <Pencil
+      className="text-blue-600 hover:text-blue-800 cursor-pointer transition"
+      title="Edit"
+      size={18}
+      onClick={(e) => {
+        e.stopPropagation()
+        handleEdit(project._id)
+      }}
+    />
+    <Trash2
+  className="text-red-600 hover:text-red-800 cursor-pointer transition"
+  title="Delete"
+  size={18}
+  onClick={(e) => {
+    e.stopPropagation();
+    handleDelete(project._id,project.projectName);
+  }}
+/>
+ 
+
+  </div>
+</td>
                 </tr>
 
                 {/* 🟨 Sub-Task Rows with Indentation and Member Tags */}
@@ -134,12 +212,26 @@ const ProjectDashboard = () => {
                           </span>
                         ))}
                       </td>
+
+                           
                     </tr>
                   ))}
-              </React.Fragment>
+             </>
             ))}
           </tbody>
         </table>
+         {showDeleteModal && (
+  <DeleteModal
+  open={showDeleteModal}
+  projectId={selectedProjectId}
+  projectName={selectedProjectName}
+  onCancel={() => {
+    setShowDeleteModal(false);
+    setSelectedProjectId(null);
+     setSelectedProjectName("");
+  }}
+  onConfirm={confirmDelete}
+/> )}
       </div>
     </div>
   );

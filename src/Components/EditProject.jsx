@@ -6,9 +6,9 @@ import spaceLogo from "../assets/Ellipse 4.png";
 import vectorIcon from "../assets/Vector.png";
 import { ToastContainer, toast } from "react-toastify";
 
-const AddProject = () => {
+const EditProject = () => {
   const navigate = useNavigate();
-
+const { spaceId,projectId } = useParams();
   const [form, setForm] = useState({
     projectName: "",
     description: "",
@@ -28,10 +28,11 @@ const AddProject = () => {
   const [selectedMembers, setSelectedMembers] = useState([]);
   const [availableUsers, setAvailableUsers] = useState([]);
   const [showUserList, setShowUserList] = useState(false);
-  const { spaceId } = useParams();
-  console.log("space", spaceId);
+
+console.log("projid",projectId)
   useEffect(() => {
-    const fetchAvailableUsers = async () => {
+
+     const fetchAvailableUsers = async () => {
       try {
         const res = await fetch(
           `http://localhost:8000/api/project/space-users/${spaceId}`,
@@ -47,7 +48,43 @@ const AddProject = () => {
       }
     };
 
-    fetchAvailableUsers();
+ 
+      const fetchProjectDetails = async () => {
+    try {
+      const res = await fetch(`http://localhost:8000/api/project/project-details/${projectId}`, {
+        credentials: "include",
+      });
+      const result = await res.json();
+console.log("projdet",result?.project)
+      if (res.ok) {
+        const createdAt = new Date(result.project.createdAt);
+       
+  const formattedStartDate = createdAt.toISOString().split("T")[0]; // 'yyyy-mm-dd'
+ console.log("format",formattedStartDate)
+  const endDate = result.project.endDate
+    ? new Date(result.project.endDate).toISOString().split("T")[0]
+    : "";
+        setForm({
+          projectName: result.project.projectName,
+          description: result.project.description,
+          members: result.project.members.map((m) => m._id), // get only IDs
+        startDate: formattedStartDate, // ✅ proper format for <input type="date" />
+    endDate: endDate,
+
+        });
+      } else {
+        console.error("Failed to fetch space details");
+      }
+    } catch (err) {
+      console.error("Error fetching space", err);
+    }
+  };
+
+  fetchAvailableUsers();
+  if (projectId) {
+    fetchProjectDetails();
+  }
+
   }, []);
 
   const handleAddMember = (userId) => {
@@ -67,9 +104,9 @@ const AddProject = () => {
   const handleSubmit = async () => {
     try {
       const res = await fetch(
-        `http://localhost:8000/api/project/createProject/${spaceId}`,
+        `http://localhost:8000/api/project/editProject/${spaceId}/${projectId}`,
         {
-          method: "POST",
+          method: "PUT",
           credentials: "include",
           headers: {
             "Content-Type": "application/json",
@@ -86,7 +123,7 @@ const AddProject = () => {
       const result = await res.json();
       console.log(result);
       if (res.ok) {
-        toast.success("Project created successfully! ✅");
+        toast.success("Project updated successfully! ✅");
 
         // ✅ Reset the form state
         setForm({
@@ -124,14 +161,14 @@ const AddProject = () => {
                 <img src={vectorIcon} alt="Back" className="w-5 h-5" />
               </button>
               <label className="text-black font-normal text-2xl">
-                Add Project
+                Edit Project
               </label>
             </div>
             <button
               onClick={handleSubmit}
               className="w-[149px] h-[48px] border border-blue-500 text-[#212121] rounded-[15px] font-normal text-[18px] leading-[24px]"
             >
-              Add
+               {projectId ? "Update" : "Add"}
             </button>
           </div>
 
@@ -322,4 +359,4 @@ const AddProject = () => {
   );
 };
 
-export default AddProject;
+export default EditProject;
