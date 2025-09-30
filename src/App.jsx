@@ -18,6 +18,9 @@ import Tasks from "./pages/Tasks";
 import EditSpace from "./Components/EditSpace";
 import EditProject from "./Components/EditProject";
 import ViewTaskDetails from "./pages/ViewTaskDetails";
+import ViewPipelineDetails from "./pages/ViewPipelineDetails";
+import { FileArchiveIcon } from "lucide-react";
+import FileAttachments from "./Components/FileAttachments";
 
 function App() {
   const appRouter = createBrowserRouter([
@@ -76,6 +79,14 @@ function App() {
          {
           path: 'task-details/:taskId',
           element:<ViewTaskDetails/>
+        },
+        {
+          path: 'pipeline-details/:pipelineId',
+          element:<ViewPipelineDetails/>
+        },
+        {
+          path: "file-attachments",
+          element:<FileAttachments/>
         }
       ],
     },

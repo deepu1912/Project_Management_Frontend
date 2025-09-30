@@ -5,7 +5,7 @@ import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 
 function Tasks() {
-  const navigate= useNavigate();
+  const navigate = useNavigate();
   const { spaceId } = useParams();
   const location = useLocation();
   const project = location.state?.project;
@@ -18,7 +18,7 @@ function Tasks() {
   useEffect(() => {
     const fetchPipelines = async () => {
       try {
-        console.log("pid",projectId)
+        console.log("pid", projectId)
         const res = await fetch(
           `http://localhost:8000/api/project/${projectId}/pipelines-with-tasks`,
           { credentials: "include" }
@@ -27,7 +27,7 @@ function Tasks() {
         console.log(result)
         if (result.success) {
           setPipelines(result?.data);
-          
+
         }
       } catch (err) {
         console.error("Error fetching pipelines:", err);
@@ -36,23 +36,40 @@ function Tasks() {
     if (projectId) fetchPipelines();
   }, [projectId]);
 
- console.log(pipelines)
+  console.log(pipelines)
 
   const toggleExpand = (pipelineId) => {
     setExpandedPipeline((prev) => (prev === pipelineId ? null : pipelineId));
   };
 
-  const handleViewPage= (taskId,taskName,startDate,endDate,assignedTo)=> {
-console.log("taskid",taskId)
-navigate(`../task-details/${taskId}`, {
-    state: {
-      taskId,
-      taskName,
-      startDate,
-      endDate,
-      assignedTo,
-    },
-  });
+  const handleViewPage = (taskId, taskName,taskDescription, startDate, endDate, assignedTo,projectId) => {
+    console.log("taskid", taskId)
+    console.log("taskDescriotion",taskDescription);
+    navigate(`../task-details/${taskId}`, {
+      state: {
+        taskId,
+        taskName,
+        taskDescription,
+        startDate,
+        endDate,
+        assignedTo,
+        projectId
+      },
+    });
+  }
+  const handleViewPipeline = (pipelineId, pipelineName,pipelineDescription, startDate, endDate,projectId) => {
+    console.log("pipelineid", pipelineId)
+    console.log("pipelineDescription",pipelineDescription);
+    navigate(`../pipeline-details/${pipelineId}`, {
+      state: {
+        pipelineId,
+        pipelineName,
+        pipelineDescription,
+        startDate,
+        endDate,
+        projectId
+      },
+    });
   }
   return (
     <div className="p-5 w-full h-full">
@@ -74,7 +91,7 @@ navigate(`../task-details/${taskId}`, {
           </div>
         </div>
         <div className="flex items-center gap-6">
-     {  pipelines.length >0 &&  (  <Link
+          {pipelines.length > 0 && (<Link
             to={"/home/createTask"}
             state={{ projectId }}
             className="flex text-gray-600 py-1 px-.5 items-center gap-1 w-28 bg-white border-2 border-gray-200"
@@ -102,20 +119,20 @@ navigate(`../task-details/${taskId}`, {
           <thead>
             <tr className="bg-white">
               <th className="text-left text-gray-500 px-4 py-2">Pipeline</th>
-               <th className="text-left text-gray-500 px-4 py-2">Start date</th>
+              <th className="text-left text-gray-500 px-4 py-2">Start date</th>
               <th className="text-left text-gray-500 px-4 py-2">Due date</th>
               <th className="text-left text-gray-500 px-4 py-2">Status</th>
               <th className="text-left text-gray-500 px-4 py-2">Assigned to</th>
-               <th className="text-left text-gray-500 px-4 py-2">Actions</th>
+              <th className="text-left text-gray-500 px-4 py-2">Actions</th>
             </tr>
           </thead>
           <tbody>
-          
+
             {pipelines.map((pipeline) => (
-              
+
               <React.Fragment key={pipeline._id}>
                 {/* Pipeline row */}
-                                
+
                 <tr
                   className="bg-gray-100 cursor-pointer"
                   onClick={() => toggleExpand(pipeline._id)}
@@ -139,20 +156,31 @@ navigate(`../task-details/${taskId}`, {
                       : "—"}
                   </td>
                   <td className="px-4 py-2">
-   
-                    
-{pipeline.tasks.length >0 && (pipeline.tasks.every(t => t.status === "Done") ? "Done" : "In Progress")}
+
+
+                    {pipeline.tasks.length > 0 && (pipeline.tasks.every(t => t.status === "Done") ? "Done" : "In Progress")}
 
                   </td>
-               
-                  {/* <td className="px-4 py-2">{pipeline.assignedTo
-                          ? pipeline.assignedTo.name || "Unassigned"
-                          : "Unassigned"}</td> */}
-                               {/* <td className="px-4 py-2">
-   
-                    
-<Eye size={14} />
-                  </td> */}
+
+                  <td className="px-4 py-2">{pipeline.tasks.assignedTo
+                    ? pipeline.tasks.assignedTo.name || "-"
+                    : "-"}</td>
+                  <td className="px-4 py-2">
+
+
+                    <Eye size={14} 
+                    className="cursor-pointer"
+                    onClick={() =>
+                      handleViewPipeline(
+                        pipeline._id,
+                        pipeline.name,
+                        pipeline.description,
+                        pipeline.startDate,
+                        pipeline.endDate,
+                        projectId
+                      )
+                    }/>
+                  </td>
                 </tr>
 
                 {/* Tasks under pipeline */}
@@ -162,7 +190,7 @@ navigate(`../task-details/${taskId}`, {
                       <td className="px-10 py-2 text-gray-700">
                         {task.taskName}
                       </td>
-                       <td className="px-4 py-2">
+                      <td className="px-4 py-2">
                         {task.startDate
                           ? new Date(task.startDate).toLocaleDateString()
                           : "—"}
@@ -178,21 +206,23 @@ navigate(`../task-details/${taskId}`, {
                           ? task.assignedTo.name || "Unassigned"
                           : "Unassigned"}
                       </td>
-                           <td className="px-4 py-2">                  
-<Eye
-  size={14}
-  className="cursor-pointer"
-  onClick={() =>
-    handleViewPage(
-      task._id,
-      task.taskName,
-      task.startDate,
-      task.endDate,
-      task.assignedTo?.name || "Unassigned"
-    )
-  }
-/>
-                  </td>
+                      <td className="px-4 py-2">
+                        <Eye
+                          size={14}
+                          className="cursor-pointer"
+                          onClick={() =>
+                            handleViewPage(
+                              task._id,
+                              task.taskName,
+                              task.description,
+                              task.startDate,
+                              task.endDate,
+                              task.assignedTo?.name || "Unassigned",
+                              projectId
+                            )
+                          }
+                        />
+                      </td>
                     </tr>
                   ))}
               </React.Fragment>

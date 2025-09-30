@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import memberIcon from "../assets/Ellipse 3.png";
 import backIcon from "../assets/Vector.png";
-
+import UploadAttachmentModal from "../Components/UploadAttachmentModal";
 const CreateTask = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -11,8 +11,8 @@ const CreateTask = () => {
     description: "",
     startDate: "",
     endDate: "",
-   pipelineId: "",
-    status: "To Do",
+    pipelineId: "",
+    status: "",
     assignedTo: null,
     attachments: [],
     subTasks: [],
@@ -20,13 +20,26 @@ const CreateTask = () => {
 
   const [availableUsers, setAvailableUsers] = useState([]);
   const [showUserList, setShowUserList] = useState(false);
-  const { spaceId} = useParams();
+  const { spaceId } = useParams();
+  const [showUploadModal, setShowUploadModal] = useState(false);
 
-  const [pipelines, setPipelines] = useState([]); 
+  const [attachments, setAttachments] = useState([
+    "Figma Prototype",
+    "ScreenShot1.png",
+    "ScreenShot2.png",
+    "Document.pdf",
+    "Wireframe.jpg",
+  ]);
+  const [showAll, setShowAll] = useState(false);
+  const handleUpload = (attachment) => {
+    console.log("Uploaded attachment:", attachment);
+    setAttachments((prev) => [...prev, attachment]);
+  };
+  const [pipelines, setPipelines] = useState([]);
   const projectId = location.state?.projectId;
 
   useEffect(() => {
- 
+
 
     const fetchAvailableUsersToAssignTask = async () => {
       try {
@@ -88,14 +101,15 @@ const CreateTask = () => {
       alert("Project ID is missing!");
       return;
     }
-  
+
     if (!form.taskName || !form.pipelineId) {
       alert("Task name and Pipeline are required!");
       return;
     }
-  
+
+
     try {
-      console.log("assignto",form.assignedTo)
+      console.log("assignto", form.assignedTo)
       const res = await fetch(
         `http://localhost:8000/api/task/${projectId}/createTask`,
         {
@@ -110,14 +124,14 @@ const CreateTask = () => {
             endDate: form.endDate || null,
             assignedTo: form.assignedTo || null,
             attachments: form.attachments || [],
-              status:form.status,
+            status: form.status,
           }),
         }
       );
-  
+
       const result = await res.json();
       console.log("Task Create Response:", result);
-  
+
       if (result.success) {
         alert("Task created successfully ✅");
         navigate(-1)
@@ -129,7 +143,7 @@ const CreateTask = () => {
       alert("Something went wrong ❌");
     }
   };
-
+  const visibleAttachments = showAll ? attachments : attachments.slice(0, 3);
   return (
     <div className="w-full h-full p-5">
       <div className="max-w-screen-xl mx-auto bg-white rounded-lg shadow overflow-hidden">
@@ -143,8 +157,8 @@ const CreateTask = () => {
             </label>
           </div>
           <button
-          onClick={handleSubmit}
-          className="w-[149px] h-[48px] border border-blue-500 text-[#212121] rounded-[15px] font-normal text-[18px] leading-[24px]">
+            onClick={handleSubmit}
+            className="w-[149px] h-[48px] border border-blue-500 text-[#212121] rounded-[15px] font-normal text-[18px] leading-[24px]">
             Add
           </button>
         </div>
@@ -200,20 +214,20 @@ const CreateTask = () => {
               </div>
             </div>
             <div>
-            <label className="block text-lg font-normal text-[#747373]">
+              <label className="block text-lg font-normal text-[#747373]">
                 Pipeline*
               </label>
               <select
-  value={form.pipelineId}
-  onChange={(e) => setForm({ ...form, pipelineId: e.target.value })}
->
-  <option value="">Select Pipeline</option>
-  {pipelines.map((p) => (
-    <option key={p._id} value={p._id}>
-      {p.name}
-    </option>
-  ))}
-</select>
+                value={form.pipelineId}
+                onChange={(e) => setForm({ ...form, pipelineId: e.target.value })}
+              >
+                <option value="">Select Pipeline</option>
+                {pipelines.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
           <div className="flex-1 space-y-10 flex flex-col">
@@ -290,13 +304,38 @@ const CreateTask = () => {
               <label className="block text-lg font-normal text-[#747373]">
                 Attachments
               </label>
-              <button className="border border-[#CECECE] w-full md:w-[200px] h-[40px] rounded-lg mt-1">
+              <button
+                onClick={() => setShowUploadModal(true)}
+                className="border border-[#CECECE] w-full md:w-[200px] h-[40px] rounded-lg mt-1">
                 Upload Attachments
               </button>
+              <div className="mt-3 flex flex-col gap-2">
+                {visibleAttachments.map((file, idx) => (
+                  <button
+                    key={idx}
+                    className="border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600 text-left hover:bg-gray-100"
+                  >
+                    {file}
+                  </button>
+                ))}
+              </div>
+              {attachments.length > 3 && (
+                <button
+                onClick={() => navigate("/home/file-attachments")}
+                  className="text-sm text-gray-500 mt-2 underline"
+                >
+                   View More
+                </button>
+              )}
             </div>
           </div>
         </div>
       </div>
+      <UploadAttachmentModal
+        isOpen={showUploadModal}
+        onClose={() => setShowUploadModal(false)}
+        onUpload={handleUpload}
+      />
     </div>
   );
 };
